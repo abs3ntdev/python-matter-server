@@ -63,9 +63,17 @@ class ChipDeviceControllerWrapper:
         self._subscriptions: dict[int, Attribute.SubscriptionTransaction] = {}
 
         # Instantiate the underlying ChipDeviceController instance on the Fabric
-        self._chip_controller = self.server.stack.fabric_admin.NewController(
-            paaTrustStorePath=str(paa_root_cert_dir)
-        )
+        # Skip PAA trust store if uncertified devices are allowed
+        if server.allow_uncertified_devices:
+            LOGGER.warning(
+                "Initializing Matter controller WITHOUT PAA certificate validation. "
+                "This bypasses security checks and should only be used for development."
+            )
+            self._chip_controller = self.server.stack.fabric_admin.NewController()
+        else:
+            self._chip_controller = self.server.stack.fabric_admin.NewController(
+                paaTrustStorePath=str(paa_root_cert_dir)
+            )
         LOGGER.debug("CHIP Device Controller Initialized")
 
     def _get_node_lock(self, node_id: int) -> asyncio.Lock:

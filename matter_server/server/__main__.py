@@ -127,6 +127,11 @@ parser.add_argument(
     action="store_false",
     help="Controls disabling server cluster interactions on a controller. This in turn disables advertisement of active controller operational identities.",
 )
+parser.add_argument(
+    "--allow-uncertified-devices",
+    action="store_true",
+    help="Allow commissioning of devices without valid PAA certificates. WARNING: This bypasses Matter security and should only be used for development/testing.",
+)
 
 args = parser.parse_args()
 
@@ -229,6 +234,7 @@ def main() -> None:
         args.bluetooth_adapter,
         args.ota_provider_dir,
         args.disable_server_interactions,
+        args.allow_uncertified_devices,
     )
 
     async def handle_stop(loop: asyncio.AbstractEventLoop) -> None:

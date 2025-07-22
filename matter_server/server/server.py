@@ -114,6 +114,7 @@ class MatterServer:
         bluetooth_adapter_id: int | None = None,
         ota_provider_dir: Path | None = None,
         enable_server_interactions: bool = True,
+        allow_uncertified_devices: bool = False,
     ) -> None:
         """Initialize the Matter Server."""
         self.storage_path = storage_path
@@ -127,6 +128,7 @@ class MatterServer:
         else:
             self.paa_root_cert_dir = Path(paa_root_cert_dir).absolute()
         self.enable_test_net_dcl = enable_test_net_dcl
+        self.allow_uncertified_devices = allow_uncertified_devices
         self.bluetooth_enabled = bluetooth_adapter_id is not None
         if ota_provider_dir is None:
             self.ota_provider_dir = DEFAULT_OTA_PROVIDER_DIR
@@ -168,11 +170,18 @@ class MatterServer:
 
         # (re)fetch all PAA certificates once at startup
         # NOTE: this must be done before initializing the controller
-        await fetch_certificates(
-            self.paa_root_cert_dir,
-            fetch_test_certificates=self.enable_test_net_dcl,
-            fetch_production_certificates=True,
-        )
+        # Skip certificate fetching if uncertified devices are allowed
+        if not self.allow_uncertified_devices:
+            await fetch_certificates(
+                self.paa_root_cert_dir,
+                fetch_test_certificates=self.enable_test_net_dcl,
+                fetch_production_certificates=True,
+            )
+        else:
+            self.logger.warning(
+                "Allowing uncertified devices - PAA certificate validation bypassed. "
+                "This should only be used for development/testing purposes."
+            )
 
         # Initialize our (intermediate) device controller which keeps track
         # of Matter devices and their subscriptions.
